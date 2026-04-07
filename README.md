@@ -1,2 +1,2 @@
-# cse160
-cse 160 spr 26
+# cse 160
+cse 160 spring 26
