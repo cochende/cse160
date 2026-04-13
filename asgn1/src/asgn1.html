@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Assignment1</title>
+  </head>
+
+  <body onload="main()">
+    <canvas id="webgl" width="400" height="400">
+      Please use a browser that supports "canvas"
+    </canvas>
+    <div id="controls">
+      <button id="clear">Clear Canvas</button>
+      <button id="undo">Undo</button>
+      <button id="drawFromCommands">Draw from Commands</button>
+      <span
+        style="
+          display: block;
+          text-align: center;
+          margin-top: 20px;
+          margin-bottom: 2px;
+          margin-left: 10px;
+          width: fit-content;
+        "
+      >
+        Drawing Mode
+      </span>
+      <div
+        id="colors"
+        style="padding: 10px; display: flex; width: fit-content; gap: 20px"
+      >
+        <button id="point">Squares</button>
+        <button id="triangle">Triangles</button>
+        <button id="circle">Circles</button>
+      </div>
+      <span
+        style="
+          display: block;
+          text-align: center;
+          margin-top: 10px;
+          margin-bottom: 2px;
+          margin-left: 10px;
+          width: fit-content;
+        "
+      >
+        Colors
+      </span>
+      <div id="colors" style="padding: 10px; display: flex; width: fit-content">
+        Red
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value="100"
+          class="slider"
+          id="red"
+        />
+        Green
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value="100"
+          class="slider"
+          id="green"
+        />
+        Blue
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value="100"
+          class="slider"
+          id="blue"
+        />
+      </div>
+      <span
+        style="
+          display: block;
+          text-align: center;
+          margin-top: 10px;
+          margin-bottom: 2px;
+          margin-left: 10px;
+          width: fit-content;
+        "
+      >
+        Other
+      </span>
+      <div
+        id="shapemisc"
+        style="
+          padding: 10px;
+          display: flex;
+          width: fit-content;
+          margin-top: 10px;
+        "
+      >
+        Shape Size
+        <input
+          type="range"
+          min="5"
+          max="40"
+          value="5"
+          class="slider"
+          id="shapesize"
+        />
+        (Circles) Segment Count
+        <input
+          type="range"
+          min="6"
+          max="30"
+          value="100"
+          class="slider"
+          id="circlecount"
+        />
+        <span>
+          Triangle Height
+          <input
+            type="range"
+            min="0.2"
+            max="2.0"
+            step="0.01"
+            value="1.0"
+            id="triangleHeight"
+          />
+        </span>
+        <span>
+          Triangle Rotation
+          <input
+            type="number"
+            min="-360"
+            max="360"
+            step="1"
+            value="0"
+            id="triangleRotation"
+          />
+        </span>
+        <span>
+          Right Triangle
+          <input type="checkbox" id="triangleRight" />
+        </span>
+      </div>
+    </div>
+    <div>
+      Command Log
+      <div>
+        <textarea
+          id="commandsLog"
+          rows="8"
+          cols="60"
+          style="margin-top: 10px"
+        ></textarea>
+      </div>
+    </div>
+    <p>
+      Hello grader! My beautiful picture should automatically load in from a
+      text file bundled in the zip!
+    </p>
+    <p>
+      I have added SOUND to my beautiful paint program. You can check awesome.js
+      to see exactly how it works but essentially:
+    </p>
+    <ul>
+      <li>Shape detemines type of wave (square, sine, or triangle)</li>
+      <li>
+        Frequency (pitch) is determined by color. Darker colors tend to be lower
+        freq, while drawing with white might make you think you turned on sticky
+        keys
+      </li>
+      <li>Finally, the length of a note is based off of size.</li>
+      <li>Notes only play upon mouseup</li>
+      <li style="color: red; font-weight: bold; font-size: x-large">
+        Please turn down your volume! Even though I've turned the gain to 0.2,
+        it still is quite loud.
+      </li>
+    </ul>
+    <img src="IMG_3706.jpg" width="400" style="rotate: calc(-90deg)" />
+    <script src="../lib/webgl-utils.js"></script>
+    <script src="../lib/webgl-debug.js"></script>
+    <script src="../lib/cuon-utils.js"></script>
+    <script src="Point.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Circle.js"></script>
+    <script src="ColoredPoints.js"></script>
+    <script src="awesome.js"></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", function () {
+        fetch("drawing.txt")
+          .then((response) => response.text())
+          .then((data) => {
+            document.getElementById("commandsLog").value = data;
+            drawFromCommands();
+          });
+      });
+    </script>
+  </body>
+</html>
