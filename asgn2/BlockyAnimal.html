@@ -9,16 +9,22 @@
     <canvas id="webgl" width="400" height="400">
       Please use a browser that supports "canvas"
     </canvas>
-    <div id="controls">
+    <span id="fps">FPS: -1</span>
+    <div
+      id="controls"
+      style="display: flex; flex-direction: column; width: 400px"
+    >
       Camera
       <input
         type="range"
-        min="0"
+        min="-180"
         max="180"
-        value="5"
+        value="0"
         class="slider"
         id="angleSlide"
       />
+      Toggle Animation
+      <button id="animationBtn" onClick="toggleAnimation()">on</button>
     </div>
     <script src="lib/webgl-utils.js"></script>
     <script src="lib/webgl-debug.js"></script>

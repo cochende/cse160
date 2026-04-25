@@ -143,12 +143,6 @@ function main() {
       click(ev);
     }
   };
-  canvas.onmouseup = function (ev) {
-    if (g_shapesList.length > 0) {
-      const lastCmd = g_commandsLog[g_commandsLog.length - 1];
-      playShapeSound(lastCmd.type, lastCmd.color, lastCmd.size);
-    }
-  };
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
