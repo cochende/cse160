@@ -79,7 +79,7 @@ class Cone {
     this.type = "cone";
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.matrix = new Matrix4();
-    this.segments = 12;
+    this.segments = 10;
   }
 
   render() {
