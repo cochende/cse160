@@ -79,32 +79,27 @@ class Cone {
     this.type = "cone";
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.matrix = new Matrix4();
-    this.segments = 12; // Number of triangles used to approximate the circle
+    this.segments = 12;
   }
 
   render() {
     var rgba = this.color;
 
-    // Pass the matrix and color to the shaders
     gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
     gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
 
     let delta = (2 * Math.PI) / this.segments;
 
     for (var i = 0; i < this.segments; i++) {
-      // Angles for the current segment
+
       let angle1 = i * delta;
       let angle2 = (i + 1) * delta;
 
-      // Coordinates for the two points on the circle's perimeter
       let x1 = Math.cos(angle1);
       let z1 = Math.sin(angle1);
       let x2 = Math.cos(angle2);
       let z2 = Math.sin(angle2);
 
-      // --- Draw Side (The "Wall") ---
-      // Tip is at (0, 1, 0), Base points are (x, 0, z)
-      // Shading sides slightly differently for depth
       gl.uniform4f(
         u_FragColor,
         rgba[0] * 0.9,
@@ -115,17 +110,15 @@ class Cone {
       drawTriangle3D([
         0,
         1,
-        0, // Apex (Tip)
+        0,
         x1,
         0,
-        z1, // Point 1 on perimeter
+        z1,
         x2,
         0,
-        z2, // Point 2 on perimeter
+        z2,
       ]);
 
-      // --- Draw Base (The "Floor") ---
-      // Center is at (0, 0, 0)
       gl.uniform4f(
         u_FragColor,
         rgba[0] * 0.5,
@@ -136,13 +129,13 @@ class Cone {
       drawTriangle3D([
         0,
         0,
-        0, // Center of base
+        0,
         x2,
         0,
-        z2, // Point 2 on perimeter
+        z2,
         x1,
         0,
-        z1, // Point 1 on perimeter
+        z1,
       ]);
     }
   }
