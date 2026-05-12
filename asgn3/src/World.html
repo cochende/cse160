@@ -8,24 +8,24 @@
   colin henderson cochende@ucsc.edu
   <br />
   <body onload="main()">
-    <canvas id="webgl" width="400" height="400">
+    <canvas id="webgl" width="1000" height="400">
       Please use a browser that supports "canvas"
     </canvas>
+    <br />
     <span id="fps">FPS: -1</span>
-    <div
-      id="controls"
-      style="display: flex; flex-direction: column; width: 400px"
+    <span id="score" style="margin-left: 20px">Points: 0</span>
+    <br />
+    <span style="color: red">you must collect apples feed your family</span>
+    <br />
+    <span style="color: red"
+      >apples rot quickly, so the quicker you get them the more family points
+      your family will award you</span
     >
-      Camera
-      <input
-        type="range"
-        min="-180"
-        max="180"
-        value="0"
-        class="slider"
-        id="angleSlide"
-      />
-    </div>
+    <br />
+    <span
+      >note, i removed looking up/down functionality so its easier to get the
+      apples, you can uncomment line 207 to turn it back on</span
+    >
     <script src="../lib/webgl-utils.js"></script>
     <script src="../lib/webgl-debug.js"></script>
     <script src="../lib/cuon-utils.js"></script>

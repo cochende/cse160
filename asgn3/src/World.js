@@ -39,15 +39,11 @@ var FSHADER_SOURCE = `
     }
   }`;
 
-/*
- --- Globals ---
-*/
-
 // general globals
 let canvas;
 let gl;
 
-// shader attributes
+// state
 let a_Position;
 let a_UV;
 let u_FragColor;
@@ -59,6 +55,7 @@ let u_Sampler0;
 let u_Sampler1;
 let u_Sampler2;
 let u_whichTexture;
+let g_camera;
 
 // fps/performance
 let g_lastFrame = performance.now();
@@ -70,16 +67,15 @@ let g_seconds = performance.now() / 1000 - g_startTime;
 let g_globalAngle = -10;
 let g_globalAngleX = 0;
 
-let g_camera;
-
 // camera control state
 var g_eye = [0, 0, 3];
 var g_at = [0, 0, -100];
 var g_up = [0, 1, 0];
 
 // camera control
-let fov = 60;
-let distancePerMovement = 0.2;
+let isDragging = false;
+let lastX = 0;
+let lastY = 0;
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -185,24 +181,47 @@ function connectVariablesToGLSL() {
 }
 
 function addActionsForUI() {
-  // sliders
-  document
-    .getElementById("angleSlide")
-    .addEventListener("mousemove", function () {
-      g_globalAngle = this.value;
-      renderAllShapes();
-    });
+  // Canvas mouse interaction
+  canvas.onmousedown = function (e) {
+    isDragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  };
+
+  canvas.onmouseup = function () {
+    isDragging = false;
+  };
+
+  canvas.onmouseleave = function () {
+    isDragging = false;
+  };
+
+  canvas.onmousemove = function (ev) {
+    if (!isDragging) return;
+    const dx = ev.clientX - lastX;
+    const dy = ev.clientY - lastY;
+    lastX = ev.clientX;
+    lastY = ev.clientY;
+
+    g_camera.rotate(dx * g_camera.sensitivity);
+    //g_camera.pitch(-dy * g_camera.sensitivity);
+  };
 }
 
 function tick() {
   let now = performance.now();
   let delta = now - g_lastFrame;
+  rot += 1;
+  if (rot > 359) {
+    rot = 0;
+  }
 
   g_fps = 1000 / delta;
   g_lastFrame = now;
 
   g_seconds = now / 1000.0 - g_startTime;
   renderAllShapes();
+  gameLoop();
 
   document.getElementById("fps").innerText = "fps: " + g_fps.toFixed(1);
 
@@ -217,6 +236,8 @@ function main() {
   document.onkeydown = keydown;
 
   initTextures(gl, 0);
+  initMap();
+  spawnApple();
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -226,25 +247,7 @@ function main() {
 }
 
 function keydown(e) {
-  if (e.keyCode === 87) {
-    // W
-    // g_eye[2] -= distancePerMovement;
-    g_camera.eye.z -= distancePerMovement;
-  } else if (e.keyCode === 83) {
-    // S
-    g_camera.eye.z += distancePerMovement;
-  } else if (e.keyCode === 65) {
-    // A
-    g_camera.eye.x -= distancePerMovement;
-  } else if (e.keyCode === 68) {
-    // D
-    g_camera.eye.x += distancePerMovement;
-  } else if (e.keyCode === 81) {
-    g_camera.r_left();
-  } else if (e.keyCode == 69) {
-    g_camera.r_right();
-  }
-  renderAllShapes();
+  g_camera.move(e);
 }
 
 function coordsEventToGL(ev) {
@@ -257,9 +260,16 @@ function coordsEventToGL(ev) {
   return [x, y];
 }
 
+let rot = 0;
+
 function renderAllShapes() {
   var projMat = new Matrix4();
-  projMat.setPerspective(60, canvas.width / canvas.height, 0.1, 100);
+  projMat.setPerspective(
+    g_camera.fov,
+    (g_camera.aspectRatio * canvas.width) / canvas.height,
+    0.1,
+    100,
+  );
   gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
 
   var viewMat = new Matrix4();
@@ -286,42 +296,50 @@ function renderAllShapes() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // draw cubes
-
-  var f = new Cube();
-  f.color = [0.2, 0.6, 0.1, 1];
-  f.textureNum = -2;
-  f.matrix.translate(0, -0.75, 0);
-  f.matrix.scale(20, 0, 20);
-  f.matrix.translate(-0.5, 0, -0.5);
-  f.drawCube();
-
-  var cube = new Cube();
-  cube.matrix = new Matrix4();
-  cube.matrix.setTranslate(0.4, 0, 0);
-  cube.matrix.rotate(30, 1, 0, 0);
-  cube.matrix.rotate(30, 0, 1, 0);
-  cube.matrix.rotate(30, 0, 0, 1);
-  cube.matrix.scale(0.3, 0.3, 0.3);
-  cube.drawCube(cube.matrix);
-
-  var cube2 = new Cube();
-  cube2.textureNum = 4;
-  cube2.matrix = new Matrix4();
-  cube2.matrix.setTranslate(-0.4, 0, 0);
-  cube2.matrix.rotate(30, 1, 0, 0);
-  cube2.matrix.rotate(30, 0, 1, 0);
-  cube2.matrix.rotate(30, 0, 0, 1);
-  cube2.matrix.scale(0.3, 0.3, 0.3);
-  cube2.drawCube(cube2.matrix);
-
-  var sky = new Cube();
-  sky.textureNum = 1;
-  sky.matrix.scale(50, 50, 50);
-  sky.matrix.translate(-0.5, -0.5, -0.5);
-  sky.drawCube();
-
+  drawObjs();
   drawMap();
+
+  if (currentApple) {
+    currentApple.draw();
+  }
+}
+
+let g_floor, g_cube1, g_cube2, g_sky;
+let cubes = [];
+
+function drawObjs() {
+  g_floor = new Cube();
+  g_floor.color = [0.2, 0.6, 0.1, 1];
+  g_floor.textureNum = -2;
+  g_floor.matrix.translate(0, -0.75, 0);
+  g_floor.matrix.scale(50, 0, 50);
+  g_floor.matrix.translate(-0.5, 0, -0.5);
+  g_floor.drawCube();
+
+  var g_cube1 = new Cube();
+  g_cube1.matrix = new Matrix4();
+  g_cube1.matrix.setTranslate(0.4, 0, 0);
+  g_cube1.matrix.rotate(rot, 1, 0, 0);
+  g_cube1.matrix.rotate(rot, 0, 1, 0);
+  g_cube1.matrix.rotate(-rot, 0, 0, 1);
+  g_cube1.matrix.scale(0.3, 0.3, 0.3);
+  g_cube1.drawCube(g_cube1.matrix);
+
+  var g_cube2 = new Cube();
+  g_cube2.textureNum = 0;
+  g_cube2.matrix = new Matrix4();
+  g_cube2.matrix.setTranslate(-0.4, 0, 0);
+  g_cube2.matrix.rotate(rot, 1, 0, 0);
+  g_cube2.matrix.rotate(rot, 0, 1, 0);
+  g_cube2.matrix.rotate(rot, 0, 0, 1);
+  g_cube2.matrix.scale(0.3, 0.3, 0.3);
+  g_cube2.drawCube(g_cube2.matrix);
+
+  var g_sky = new Cube();
+  g_sky.textureNum = 1;
+  g_sky.matrix.scale(50, 50, 50);
+  g_sky.matrix.translate(-0.5, -0.5, -0.5);
+  g_sky.drawCube();
 }
 
 function initTextures() {
@@ -377,33 +395,279 @@ function loadTexture(image, textureUnit) {
 }
 
 // map
-
 var g_map = [
-  [4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
-  [4, 0, 0, 0, 2, 0, 0, 0, 0, 4],
-  [4, 0, 0, 0, 0, 0, 0, 0, 0, 4],
-  [4, 0, 0, 0, 0, 0, 0, 0, 0, 4],
-  [4, 0, 0, 0, 0, 0, 0, 0, 0, 4],
-  [4, 0, 1, 0, 0, 0, 0, 0, 0, 4],
-  [4, 0, 0, 0, 2, 0, 0, 0, 0, 4],
-  [4, 0, 0, 0, 0, 0, 0, 0, 0, 4],
-  [4, 0, 0, 0, 0, 0, 0, 1, 0, 4],
-  [4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+  [
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 1, 1, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 1, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 4,
+  ],
+  [
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4,
+  ],
 ];
 
-function drawMap() {
-  for (x = 0; x < 10; x++) {
-    for (y = 0; y < 10; y++) {
+function initMap() {
+  for (let x = 0; x < 32; x++) {
+    for (let y = 0; y < 32; y++) {
       if (g_map[x][y] >= 1) {
-        yval = -0.75;
-        for (i = 0; i < g_map[x][y]; i++) {
-          var c = new Cube();
+        for (let i = 0; i < g_map[x][y]; i++) {
+          let c = new Cube();
           c.textureNum = 2;
-          c.matrix.translate(x - 4, yval, y - 4);
-          c.drawCube();
-          yval += 1;
+          c.matrix.translate(x - 15, -0.75 + i, y - 15);
+          cubes.push(c);
         }
       }
     }
+  }
+}
+
+function drawMap() {
+  for (let cube of cubes) {
+    cube.drawCube();
+  }
+}
+
+// game logic
+
+let points = 0;
+
+class Apple {
+  constructor(x, y) {
+    this.mapX = x;
+    this.mapY = y;
+    this.spawnTime = performance.now() / 1000;
+    this.collected = false;
+  }
+
+  getColor() {
+    const age = performance.now() / 1000 - this.spawnTime;
+    const maxAge = 30; // 30 seconds total
+    const agePercent = Math.min(age / maxAge, 1.0); // 0 to 1
+
+    const r = 1.0 - agePercent * 0.4;
+    const g = agePercent * 0.3;
+    const b = 0;
+
+    return [r, g, b, 1.0];
+  }
+
+  getPoints() {
+    const age = performance.now() / 1000 - this.spawnTime;
+    if (age < 10) return 5;
+    else if (age < 20) return 3;
+    else return 1;
+  }
+
+  isExpired() {
+    const age = performance.now() / 1000 - this.spawnTime;
+    return age > 30;
+  }
+
+  draw() {
+    if (this.collected || this.isExpired()) return;
+
+    const appleCube = new Cube();
+    appleCube.color = this.getColor();
+    appleCube.textureNum = -2;
+
+    const x = this.mapX - 15;
+    const y = this.mapY - 15;
+
+    const bounceAmount = 0.3 * Math.sin((performance.now() / 1000) * 3);
+    const worldHeight = 0.5 + bounceAmount;
+
+    appleCube.matrix.translate(x, worldHeight, y);
+
+    const rotation = (performance.now() / 1000) * 50;
+
+    appleCube.matrix.rotate(rotation, 1, 0, 1);
+    appleCube.matrix.scale(0.25, 0.25, 0.25);
+    appleCube.drawCube();
+  }
+}
+
+let currentApple = null;
+
+function spawnApple() {
+  if (currentApple && !currentApple.collected && !currentApple.isExpired()) {
+    return;
+  }
+
+  const mapWidth = 32;
+  const mapHeight = 32;
+  const x = Math.floor(Math.random() * (mapWidth - 15)) + 2;
+  const y = Math.floor(Math.random() * (mapHeight - 15)) + 2;
+
+  currentApple = new Apple(x, y);
+  console.log(`Apple spawned at (${x}, ${y})`);
+}
+
+function tryCollectApple() {
+  if (!currentApple || currentApple.collected || currentApple.isExpired()) {
+    spawnApple();
+    return false;
+  }
+
+  const appleWorldX = currentApple.mapX - 15;
+  const appleWorldY = currentApple.mapY - 15;
+
+  const camX = g_camera.eye.x;
+  const camY = g_camera.eye.y;
+  const camZ = g_camera.eye.z;
+
+  const dx = camX - appleWorldX;
+  const dy = camY - 0.5;
+  const dz = camZ - appleWorldY;
+  const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+  const collisionRadius = 5;
+
+  if (distance < collisionRadius) {
+    const pointsEarned = currentApple.getPoints();
+    points += pointsEarned;
+    currentApple.collected = true;
+    console.log(`Apple collected... +${pointsEarned} points. Total: ${points}`);
+
+    setTimeout(() => {
+      spawnApple();
+    }, 100);
+    return true;
+  }
+  return false;
+}
+
+function gameLoop() {
+  tryCollectApple();
+
+  let scoreText = `Points: ${points}`;
+  if (currentApple && !currentApple.collected && !currentApple.isExpired()) {
+    const age = performance.now() / 1000 - currentApple.spawnTime;
+    const pointsValue = currentApple.getPoints();
+    scoreText += ` | Apple: ${pointsValue}pts (${(30 - age).toFixed(1)}s)`;
+  }
+
+  const scoreElement = document.getElementById("score");
+  if (scoreElement) {
+    scoreElement.innerText = scoreText;
   }
 }
