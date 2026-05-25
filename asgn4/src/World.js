@@ -41,7 +41,6 @@ var FSHADER_SOURCE = `
   uniform float u_spotlightOuterCutoff;
 
   void main() {
-    // 1. Base texture/color calculation
     if (u_whichTexture == -2) {
       gl_FragColor = u_FragColor;
     } else if (u_whichTexture == -1) {
@@ -56,18 +55,15 @@ var FSHADER_SOURCE = `
       gl_FragColor = vec4((v_Normal+1.0)/2.0, 1.0);
     }
 
-    // 2. Base lighting vectors
     vec3 lv = u_lightPos - vec3(v_VertPos);
     vec3 L = normalize(lv);
     vec3 N = normalize(v_Normal);
     vec3 R = reflect(-L, N);
     vec3 E = normalize(u_cameraPos - vec3(v_VertPos));
 
-    // 3. Standard Point Light calculations (the "before" state)
     float nDotL = max(dot(N, L), 0.0);
     float spec = pow(max(dot(E, R), 0.0), 10.0);
 
-    // 4. Spotlight logic (applies only if u_lightType is true)
     if (u_lightType) {
         vec3 spotDir = normalize(u_spotlightDir);
         float spotAngle = dot(-L, spotDir);  // negative L points toward light
@@ -82,11 +78,9 @@ var FSHADER_SOURCE = `
         spec *= spotIntensity;
     }
 
-    // 5. Final color components
     vec3 diffuse = vec3(gl_FragColor) * nDotL * u_lightColor;
-    vec3 ambient = vec3(gl_FragColor) * 0.3 * u_lightColor; // Ambient stays constant regardless of spotlight
+    vec3 ambient = vec3(gl_FragColor) * 0.3 * u_lightColor;
 
-    // 6. Apply lighting if turned on
     if (u_lightOn) {
       if (u_whichTexture != -2) {
         gl_FragColor = vec4(vec3(spec) * u_lightColor + diffuse + ambient, 1.0);
@@ -356,7 +350,7 @@ function addActionsForUI() {
     .getElementById("colorslide")
     .addEventListener("input", function (ev) {
       var val = this.value / 100;
-      g_lightColor = [val, val * 0.5, 1 - val]; // Change global, not light.color
+      g_lightColor = [val, val * 0.5, 1 - val];
     });
 }
 
@@ -390,7 +384,6 @@ function main() {
   initTextures(gl, 0);
   initMap();
 
-  // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
   // Clear <canvas>
