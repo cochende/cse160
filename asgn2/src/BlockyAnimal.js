@@ -71,7 +71,7 @@ let animate = true;
 
 let g_legJoint1 = 20;
 let g_legJoint2 = 0;
-let g_footJoint = -215
+let g_footJoint = -215;
 
 function toggleAnimation() {
   const btn = document.getElementById("animationBtn");
@@ -150,20 +150,26 @@ function addActionsForUI() {
       renderAllShapes();
     });
 
-    document.getElementById("legJoint1Slide").addEventListener("input", function () {
-    g_legJoint1 = this.value;
-    renderAllShapes();
-  });
-  
-  document.getElementById("legJoint2Slide").addEventListener("input", function () {
-    g_legJoint2 = this.value;
-    renderAllShapes();
-  });
-  
-  document.getElementById("footJointSlide").addEventListener("input", function () {
-    g_footJoint = this.value;
-    renderAllShapes();
-  });
+  document
+    .getElementById("legJoint1Slide")
+    .addEventListener("input", function () {
+      g_legJoint1 = this.value;
+      renderAllShapes();
+    });
+
+  document
+    .getElementById("legJoint2Slide")
+    .addEventListener("input", function () {
+      g_legJoint2 = this.value;
+      renderAllShapes();
+    });
+
+  document
+    .getElementById("footJointSlide")
+    .addEventListener("input", function () {
+      g_footJoint = this.value;
+      renderAllShapes();
+    });
 
   //dragging and clicking
 
@@ -237,7 +243,7 @@ function updateAnimationAngles() {
   if (animate) {
     g_wingAngle = 45 * Math.sin(8 * g_seconds);
     g_secondaryWingAngle = 20 * Math.sin(8 * g_seconds);
-    g_legJoint1 = 10*Math.sin(g_seconds);
+    g_legJoint1 = 10 * Math.sin(g_seconds);
     let dt = 0.01;
     let amt = g_flightSpeed * dt;
 
@@ -360,7 +366,7 @@ function renderAllShapes() {
   var leg1 = new Cube();
   leg1.matrix = new Matrix4(bodyMat);
   leg1.matrix.translate(0.18, 0, 0.6);
-  leg1.matrix.rotate(g_legJoint1, 1, 0, 0); 
+  leg1.matrix.rotate(g_legJoint1, 1, 0, 0);
   var leg1Mat = new Matrix4(leg1.matrix);
   leg1.matrix.scale(0.05, -0.15, 0.05);
   leg1.drawCube(leg1.matrix, orange);
@@ -375,7 +381,7 @@ function renderAllShapes() {
 
   var foot = new Cube();
   foot.matrix = new Matrix4(l2mat);
-  foot.matrix.translate(-0.01, -0.08, .01);
+  foot.matrix.translate(-0.01, -0.08, 0.01);
   foot.matrix.rotate(g_footJoint, 1, 0, 0);
   foot.matrix.scale(0.07, 0.03, 0.13);
   foot.drawCube(foot.matrix, orange);
