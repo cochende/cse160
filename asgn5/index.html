@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@v0.149.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.149.0/examples/jsm/",
+          "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.19/dist/lil-gui.esm.js"
+        }
+      }
+    </script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      #c {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        background: url(skybox.jpg) no-repeat center center;
+        background-size: cover;
+      }
+      #points {
+        position: absolute;
+        top: 50px;
+        left: 20px;
+        font-size: 32px;
+        font-weight: thin;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+    </style>
+    <title>Colin Henderson Assignment 5</title>
+  </head>
+  <body>
+    <div id="ins">click the glowing green shape for points!</div>
+    <div id="points">points- 0</div>
+    <canvas id="c"></canvas>
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
